@@ -11,6 +11,22 @@
 #import "TFHpple.h"
 #import "Tutorial.h"
 
+#define RegularTaobao   @"item.taobao.com"
+#define RegularJD       @"item.jd.com"
+
+
+
+#pragma mark url type
+typedef enum {
+    MessageUrlTypeDefault = 0,
+    MessageUrlTypeJD,
+    MessageUrlTypeTaobao,
+    MessageUrlTypeTmall,
+    MessageUrlTypeDianPing,
+    MessageUrlTypeMeiTuan,
+    MessageUrlTypeCtrip
+}MessageUrlType;
+
 @interface ViewController ()<UIWebViewDelegate>
 @property (strong, nonatomic) IBOutlet UILabel *titleLabel;
 @property (strong, nonatomic) IBOutlet UILabel *infoLabel;
@@ -20,6 +36,8 @@
 @property (strong, nonatomic) IBOutlet UIImageView *photoView;
 @property (strong, nonatomic) IBOutlet UITextField *urlTextField;
 @property (strong, nonatomic) IBOutlet UILabel *priceLabel;
+
+@property (assign, nonatomic) MessageUrlType urlType;
 
 @end
 
@@ -34,7 +52,32 @@
         urlSource = @"https://item.taobao.com/item.htm?spm=a219e.1191392.1111.5.uqXla7&id=45261106601&scm=1029.newlist-0.1.50002766&ppath=&sku=&ug=#detail";
     }
     
+    urlSource = @"http://item.jd.com/1268079336.html";
+
+
+    NSError *error = NULL;
+    NSString *pattern = [NSString stringWithFormat:@"(%@|%@)",RegularTaobao,RegularJD];
     
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:&error];
+    NSArray *matches = [regex matchesInString:urlSource options:0 range:NSMakeRange(0, [urlSource length])];
+    NSUInteger matchCount = [matches count];
+    if (matchCount) {
+        for (NSUInteger matchIdx = 0; matchIdx < matchCount; matchIdx++) {
+            NSTextCheckingResult *match = [matches objectAtIndex:matchIdx];
+            NSRange matchRange = [match range];
+            NSString *result = [urlSource substringWithRange:matchRange];
+            NSLog(@"result : %@",result);
+            if ([result isEqualToString:RegularJD]) {
+                self.urlType = MessageUrlTypeJD;
+            }else if ([result isEqualToString:RegularTaobao]){
+                self.urlType = MessageUrlTypeTaobao;
+            }
+        }
+    }
+    else {
+        NSLog(@"Nah... No matches.");
+    }
+
     //淘宝URL解析；
 //    [self productUrlParseTaobao:urlSource];
     
