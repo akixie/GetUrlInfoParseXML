@@ -19,6 +19,7 @@
 @property (strong, nonatomic) IBOutlet UIScrollView *sView;
 @property (strong, nonatomic) IBOutlet UIImageView *photoView;
 @property (strong, nonatomic) IBOutlet UITextField *urlTextField;
+@property (strong, nonatomic) IBOutlet UILabel *priceLabel;
 
 @end
 
@@ -28,7 +29,9 @@
     NSString *urlSource = self.urlTextField.text;
     if (urlSource.length <= 0) {
         //为空给一个默认url
-        urlSource = @"https://item-paimai.taobao.com/pmp_item/526929043173.htm?s=pmp_detail&spm=a2129.7629195.1998344376.6.6nszl5";
+//        urlSource = @"https://item-paimai.taobao.com/pmp_item/526929043173.htm?s=pmp_detail&spm=a2129.7629195.1998344376.6.6nszl5";
+        
+        urlSource = @"https://item.taobao.com/item.htm?spm=a219e.1191392.1111.5.uqXla7&id=45261106601&scm=1029.newlist-0.1.50002766&ppath=&sku=&ug=#detail";
     }
     
     
@@ -36,16 +39,120 @@
 //    [self productUrlParseTaobao:urlSource];
     
     //京东
+//    urlSource = @"http://item.jd.com/1268079336.html";
+//    [self productUrlParseJD:urlSource];
     
     
     //大众点评
-    
 //    urlSource = @"http://www.dianping.com/shop/22390170";
     urlSource = @"http://www.dianping.com/shop/23292477";
     self.urlTextField.text = urlSource;
     [self productUrlParseDianPing:urlSource];
     
+    //饿了么 ..用JS生成的，目前无法获取
+//    urlSource = @"https://www.ele.me/shop/332316";
+//    [self productUrlParseELE:urlSource];
     
+    //ctrip 酒店
+//    urlSource =@"http://hotels.ctrip.com/international/904373.html?CheckIn=2016-03-04&CheckOut=2016-03-05&Rooms=2&childNum=2&PromotionID=&NoShowSearchBox=T&isfull=F&cbn=58&ecp=907574#ctm_ref=hi_0_0_0_0_lst_sr_1_df_ls_1_n_hi_0_0_0";
+//    [self productUrlParseCtrip:urlSource];
+    
+    //美团
+    //美团团购
+//    urlSource = @"http://www.meituan.com/deal/29229429.html?mtt=1.topic%2Fnew.0.0.ilbpoubt";
+    //美团商铺
+//    urlSource = @"http://bj.meituan.com/shop/42728914#bdw";
+//    [self productUrlParseMeituan:urlSource];
+    
+    
+}
+//美团
+-(void)productUrlParseMeituan:(NSString*)urlSource{
+    
+    NSData *tutorialsHtmlData = [NSData dataWithContentsOfURL:[NSURL URLWithString:urlSource]];
+    TFHpple *tutorialsParser = [TFHpple hppleWithHTMLData:tutorialsHtmlData];
+    [self getProductBaseInfo:tutorialsParser];
+    
+    //图片
+    
+    NSString *imgQueryString = @"//div[@class='deal-component-cover ui-slider']/img";
+    NSArray *imgNodes = [tutorialsParser searchWithXPathQuery:imgQueryString];
+    
+    for (TFHppleElement *element in imgNodes) {
+        NSDictionary *nodeDic = element.attributes;
+        NSString *photoUrl = nodeDic[@"data-src"];
+        NSLog(@"photoUrl : %@",photoUrl);
+        NSURL *imageURL = [NSURL URLWithString:photoUrl];
+        NSData *imageData = [NSData dataWithContentsOfURL:imageURL];
+        UIImage *image = [UIImage imageWithData:imageData];
+        self.photoView.image = image;
+    }
+    
+    //价格
+    
+    
+    
+    
+    
+}
+
+//携程
+-(void)productUrlParseCtrip:(NSString*)urlSource{
+    
+    NSData *tutorialsHtmlData = [NSData dataWithContentsOfURL:[NSURL URLWithString:urlSource]];
+    TFHpple *tutorialsParser = [TFHpple hppleWithHTMLData:tutorialsHtmlData];
+    [self getProductBaseInfo:tutorialsParser];
+    
+    
+    
+}
+
+//饿了么
+-(void)productUrlParseELE:(NSString*)urlSource{
+    
+    NSData *tutorialsHtmlData = [NSData dataWithContentsOfURL:[NSURL URLWithString:urlSource]];
+    TFHpple *tutorialsParser = [TFHpple hppleWithHTMLData:tutorialsHtmlData];
+    [self getProductBaseInfo:tutorialsParser];
+    
+    
+    
+}
+
+
+//京东
+-(void)productUrlParseJD:(NSString*)urlSource{
+    NSData *tutorialsHtmlData = [NSData dataWithContentsOfURL:[NSURL URLWithString:urlSource]];
+    TFHpple *tutorialsParser = [TFHpple hppleWithHTMLData:tutorialsHtmlData];
+    [self getProductBaseInfo:tutorialsParser];
+    
+    //价格
+    NSString *priceQueryString = @"//strong[@id='jd-price']";
+    NSArray *priceNodes = [tutorialsParser searchWithXPathQuery:priceQueryString];
+    for (TFHppleElement *element in priceNodes) {
+        NSArray *nodeArray = element.children;
+        for (TFHppleElement *dic in nodeArray) {
+            NSString *name = dic.tagName;
+            NSString *priceStr = [NSString stringWithFormat:@"￥%@",dic.content];
+            
+            NSLog(@"priceStr : %@",priceStr);
+            self.priceLabel.text = priceStr;
+        }
+    }
+    
+    //图片规则
+    NSString *imgQueryString = @"//div[@class='jqzoom']/img";
+    NSArray *imgNodes = [tutorialsParser searchWithXPathQuery:imgQueryString];
+    
+    for (TFHppleElement *element in imgNodes) {
+        NSDictionary *nodeDic = element.attributes;
+        NSString *photoUrl = nodeDic[@"src"];
+        photoUrl = [NSString stringWithFormat:@"http:%@",photoUrl];
+        NSLog(@"photoUrl : %@",photoUrl);
+        NSURL *imageURL = [NSURL URLWithString:photoUrl];
+        NSData *imageData = [NSData dataWithContentsOfURL:imageURL];
+        UIImage *image = [UIImage imageWithData:imageData];
+        self.photoView.image = image;
+    }
     
 }
 
@@ -103,6 +210,21 @@
     TFHpple *tutorialsParser = [TFHpple hppleWithHTMLData:tutorialsHtmlData];
     [self getProductBaseInfo:tutorialsParser];
     
+    //价格
+    NSString *priceQueryString = @"//em[@class='tb-rmb-num']";
+    NSArray *priceNodes = [tutorialsParser searchWithXPathQuery:priceQueryString];
+    for (TFHppleElement *element in priceNodes) {
+        NSArray *nodeArray = element.children;
+        for (TFHppleElement *dic in nodeArray) {
+            NSString *name = dic.tagName;
+            NSString *priceStr = [NSString stringWithFormat:@"￥%@",dic.content];
+            
+            NSLog(@"priceStr : %@",priceStr);
+            self.priceLabel.text = priceStr;
+        }
+
+        
+    }
     
     //图片 淘宝ID: J_ImgBooth
     NSString *imgQueryString = @"//img";
@@ -151,7 +273,9 @@
     NSString *tutorialsXpathQueryString = @"//meta";
     NSArray *tutorialsNodes = [tutorialsParser searchWithXPathQuery:tutorialsXpathQueryString];
     for (TFHppleElement *element in tutorialsNodes) {
-        
+        if (element == nil) {
+            continue;
+        }
         NSDictionary *nodeDic = element.attributes;
         NSString *nodeName = nodeDic[@"name"];
         
